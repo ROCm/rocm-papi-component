@@ -18,6 +18,10 @@ The component source tree:
 
 ## To install
 ```
+ - Need ROCm installed
+
+ https://github.com/RadeonOpenCompute/ROCm
+
  - Clone papi repository:
 
  git clone https://bitbucket.org/icl/papi.git
