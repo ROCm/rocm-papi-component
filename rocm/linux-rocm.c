@@ -155,6 +155,7 @@ DECLAREROCMFUNC(rocprofiler_start, (rocprofiler_t*, uint32_t));
 DECLAREROCMFUNC(rocprofiler_read, (rocprofiler_t*, uint32_t));
 DECLAREROCMFUNC(rocprofiler_stop, (rocprofiler_t*, uint32_t));
 DECLAREROCMFUNC(rocprofiler_get_data, (rocprofiler_t*, uint32_t));
+DECLAREROCMFUNC(rocprofiler_get_metrics, (const rocprofiler_t*));
 DECLAREROCMFUNC(rocprofiler_reset, (rocprofiler_t*, uint32_t));
 
 // file handles used to access rocm libraries with dlopen
@@ -206,6 +207,7 @@ static int papirocm_linkRocmLibraries()
     DLSYM_AND_CHECK(dl2, rocprofiler_read);
     DLSYM_AND_CHECK(dl2, rocprofiler_stop);
     DLSYM_AND_CHECK(dl2, rocprofiler_get_data);
+    DLSYM_AND_CHECK(dl2, rocprofiler_get_metrics);
     DLSYM_AND_CHECK(dl2, rocprofiler_reset);
 
     return (PAPI_OK);
@@ -532,6 +534,7 @@ static int papirocm_read(hwd_context_t * ctx, hwd_control_state_t * ctrl, long l
         ROCM_CALL_CK(rocprofiler_read, (eventCtx, 0), return (PAPI_EMISC));
         ROCMDBG("waiting for data\n");
         ROCM_CALL_CK(rocprofiler_get_data, (eventCtx, 0), return (PAPI_EMISC));
+        ROCM_CALL_CK(rocprofiler_get_metrics, (eventCtx), return (PAPI_EMISC));
         ROCMDBG("done\n");
 
         for(jj = 0; jj < gctrl->activeEventCount; jj++) {
