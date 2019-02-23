@@ -51,6 +51,13 @@ The component source tree:
   export RPL_DIR=<your path>/rocprofiler
 ```
 
+## To test
+```
+./utils/papi_component_avail
+./utils/papi_native_avail
+./utils/papi_command_line rocm:::device:0:GRBM_COUNT rocm:::device:0:GRBM_GUI_ACTIVE
+```
+
 ## Provided metrics
 ```
 ===============================================================================
