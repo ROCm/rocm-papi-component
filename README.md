@@ -55,6 +55,8 @@ The component source tree:
 ```
 # path to metrics XML file
 export ROCP_METRICS=/opt/rocm/rocprofiler/lib/metrics.xml
+# path to rocprofiler library
+export LD_LIBRARY_PATH=/opt/rocm/rocprofiler/lib:${LD_LIBRARY_PATH}
 # simple tests provided by PAPI utils
 ./utils/papi_component_avail
 ./utils/papi_native_avail
