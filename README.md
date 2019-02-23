@@ -53,7 +53,9 @@ The component source tree:
 
 ## To test
 ```
-export ROCP_METRICS=<path>/metrics.xml
+# path to metrics XML file
+export ROCP_METRICS=/opt/rocm/rocprofiler/lib/metrics.xml
+# simple tests provided by PAPI utils
 ./utils/papi_component_avail
 ./utils/papi_native_avail
 ./utils/papi_command_line rocm:::device:0:GRBM_COUNT rocm:::device:0:GRBM_GUI_ACTIVE
