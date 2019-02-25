@@ -463,7 +463,7 @@ static int papirocm_update_control_state(hwd_control_state_t * ctrl, NativeInfo_
             memset(&properties, 0, sizeof(properties));
             properties.queue_depth = 128;
             ROCM_CALL_CK(rocprofiler_open, (gctxt->availAgentArray[eventDeviceNum], eventctrl->conEvents, eventctrl->conEventsCount, &(eventctrl->ctx),
-                                          ROCPROFILER_MODE_STANDALONE | ROCPROFILER_MODE_CREATEQUEUE, &properties), return (PAPI_EMISC));
+                                          ROCPROFILER_MODE_STANDALONE | ROCPROFILER_MODE_CREATEQUEUE, &properties), return (PAPI_EBUG));
             ROCM_CALL_CK(rocprofiler_group_count, (eventctrl->ctx, &numPasses), return (PAPI_EMISC));
 
             if (numPasses > 1) {
@@ -500,6 +500,7 @@ static int papirocm_start(hwd_context_t * ctx, hwd_control_state_t * ctrl)
         int eventDeviceNum = gctrl->arrayOfActiveContexts[cc]->deviceNum;
         Context eventCtx = gctrl->arrayOfActiveContexts[cc]->ctx;
         ROCMDBG("Start device %d ctx %p ts %lu\n", eventDeviceNum, eventCtx, gctrl->startTimestampNs);
+        if (eventCtx == NULL) abort();
         ROCM_CALL_CK(rocprofiler_start, (eventCtx, 0), return (PAPI_EMISC));
     }
 
