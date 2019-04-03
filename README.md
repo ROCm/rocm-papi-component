@@ -43,7 +43,7 @@ The component source tree:
   export CXX=/usr/bin/clang++
   export CC=/usr/bin/clang
 
- - You can set path to ROCm root by ROCM_DIR and ROCn profiling library,
+ - You can set path to ROCm root by ROCM_DIR and ROCm profiling library,
   ROC-profiler by RPL_DIR.
   By default ROCM_DIR='/opt/rocm' and RPL_DIR='/opt/rocm/rocprofiler':
 
