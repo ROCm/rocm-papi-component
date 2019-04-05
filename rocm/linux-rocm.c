@@ -230,43 +230,65 @@ static hsa_status_t papirocm_get_gpu_handle(hsa_agent_t agent, void* arg) {
   return HSA_STATUS_SUCCESS;
 }
 
+// Callback function to get the number of metrics
+// Each element of instanced metrics is considered as a seoarate event
+static hsa_status_t papirocm_count_native_events_callback(const rocprofiler_info_data_t info, void * arg) {
+    const uint32_t instances = info.metric.instances;
+    uint32_t* count = (uint32_t*) arg;
+    (*count) += instances;
+    return HSA_STATUS_SUCCESS;
+}
+
+// Callback function to register available metrics
 typedef struct {
     int device_num;
+    uint32_t count;
     papirocm_context_t * ctx;
 } events_callback_arg_t;
-
-// Callback function to get the number of metrics
 static hsa_status_t papirocm_add_native_events_callback(const rocprofiler_info_data_t info, void * arg) {
+    const uint32_t instances = info.metric.instances;
     events_callback_arg_t * callback_arg = (events_callback_arg_t*) arg;
     papirocm_context_t * ctx = callback_arg->ctx;
     const int eventDeviceNum = callback_arg->device_num;
-    const uint32_t index = ctx->availEventSize;
+    const uint32_t count = callback_arg->count;
+    uint32_t index = ctx->availEventSize;
 
-    snprintf(ctx->availEventDesc[index].name, PAPI_MAX_STR_LEN, "device:%d:%s", eventDeviceNum, info.metric.name);
-    ctx->availEventDesc[index].name[PAPI_MAX_STR_LEN - 1] = '\0';
-    strncpy(ctx->availEventDesc[index].description, info.metric.description, PAPI_2MAX_STR_LEN);
-    ctx->availEventDesc[index].description[PAPI_2MAX_STR_LEN - 1] = '\0';
+    if (index + instances > count) return HSA_STATUS_ERROR;
 
-    EventID eventId = {};
-    eventId.kind = ROCPROFILER_FEATURE_KIND_METRIC;
-    eventId.name = strdup(info.metric.name);
+    for (uint32_t n = 0; n < instances; n++, index++) {
+      const char* name = info.metric.name;
+      char name1[PAPI_MAX_STR_LEN];
 
-    ctx->availEventDeviceNum[index] = eventDeviceNum;
-    ctx->availEventIDArray[index] = eventId;
-    ctx->availEventSize = index + 1;
+      if (instances > 1) {
+        snprintf(name1, PAPI_MAX_STR_LEN, "%s[%d]", info.metric.name, n);
+        name1[PAPI_MAX_STR_LEN - 1] = '\0';
+        name = name1;
+      }
+      snprintf(ctx->availEventDesc[index].name, PAPI_MAX_STR_LEN, "device:%d:%s", eventDeviceNum, name);
+      ctx->availEventDesc[index].name[PAPI_MAX_STR_LEN - 1] = '\0';
+      strncpy(ctx->availEventDesc[index].description, info.metric.description, PAPI_2MAX_STR_LEN);
+      ctx->availEventDesc[index].description[PAPI_2MAX_STR_LEN - 1] = '\0';
+
+      EventID eventId = {};
+      eventId.kind = ROCPROFILER_FEATURE_KIND_METRIC;
+      eventId.name = strdup(name);
+
+      ctx->availEventDeviceNum[index] = eventDeviceNum;
+      ctx->availEventIDArray[index] = eventId;
+    }
+
+    ctx->availEventSize = index;
 
     return HSA_STATUS_SUCCESS;
 }
 
 static int papirocm_add_native_events(papirocm_context_t * ctx)
 {
+    /* Count all events. Each element of metrics of array type is considered as a seoarate event */
     uint32_t maxEventSize = 0;
-
     for (uint32_t i = 0; i < ctx->availAgentSize; ++i) {
-      uint32_t size = 0;
-      ROCM_CALL_CK(rocprofiler_get_info, (&(ctx->availAgentArray[i]), ROCPROFILER_INFO_KIND_METRIC_COUNT, &size), return (PAPI_EMISC));
-      maxEventSize += size;
-    } 
+      ROCM_CALL_CK(rocprofiler_iterate_info, (&(ctx->availAgentArray[i]), ROCPROFILER_INFO_KIND_METRIC, papirocm_count_native_events_callback, (void*)(&maxEventSize)), return (PAPI_EMISC));
+    }
   
     /* Allocate space for all events and descriptors */
     ctx->availEventDeviceNum = (int *) papi_calloc(maxEventSize, sizeof(int));
@@ -281,6 +303,7 @@ static int papirocm_add_native_events(papirocm_context_t * ctx)
     for (uint32_t i = 0; i < ctx->availAgentSize; ++i) {
       events_callback_arg_t arg;
       arg.device_num = i;
+      arg.count = maxEventSize;
       arg.ctx = ctx;
       ROCM_CALL_CK(rocprofiler_iterate_info, (&(ctx->availAgentArray[i]), ROCPROFILER_INFO_KIND_METRIC, papirocm_add_native_events_callback, (void*)(&arg)), return (PAPI_EMISC));
     }
